@@ -53,21 +53,7 @@ git clone https://github.com/your-username/repo-textractor.git
 cd repo-textractor
 ```
 
-### 3. Prepare Dependencies File (If Needed)
-
-If the `requirements.txt` file is not already present, you can easily create it. First, install the necessary packages in your virtual environment:
-
-```bash
-pip install flask requests
-```
-
-Then, "freeze" your environment's dependencies into the `requirements.txt` file:
-
-```bash
-pip freeze > requirements.txt
-```
-
-### 4. Set Up Environment & Install (Recommended Method)
+### 3. Set Up Environment & Install (Recommended Method)
 
 These instructions use `pyenv` to ensure you are using a specific, consistent Python version.
 
@@ -102,7 +88,7 @@ python -m venv venv
 pip install -r requirements.txt
 ```
 
-### 5. (Recommended) Set GitHub API Token
+### 4. (Recommended) Set GitHub API Token
 
 To avoid being rate-limited by the GitHub API, you should create a [Personal Access Token (PAT)](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens) with `public_repo` access.
 
@@ -128,17 +114,17 @@ $env:GITHUB_TOKEN="your_personal_access_token_here"
 
 The application will automatically use this token if it's available.
 
-### 6. Run the Application
+### 5. Run the Application
 
 ```bash
-flask run --port 5001
+flask run --port 15001
 ```
 
-The application will now be running at `http://127.0.0.1:5001`.
+The application will now be running at `http://127.0.0.1:15001`.
 
 ## Usage
 
-1.  Open your web browser and navigate to `http://127.0.0.1:5001`.
+1.  Open your web browser and navigate to `http://127.0.0.1:15001`.
 2.  Enter the URL of any public GitHub repository into the input field.
 3.  Click the **Preview** button.
 4.  Wait for the file tree to be fetched and displayed.
