@@ -1,0 +1,64 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RepoTextractor</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head><body>
+<div class="container">
+    <header>
+        <h1>RepoTextractor</h1>
+        <p>Convert a public GitHub repository into a single text file for LLMs.</p>
+    </header>
+
+    <main>
+        <div class="input-section">
+            <input type="text" id="repo-url" placeholder="Enter a public GitHub URL (e.g., https://github.com/owner/repo)">
+            <button id="preview-btn">Preview</button>
+        </div>
+
+        <div id="loading-indicator" class="hidden">
+            <div class="spinner"></div>
+            <p>Fetching repository file tree...</p>
+        </div>
+
+        <div id="error-message" class="hidden"></div>
+
+        <div id="config-section" class="hidden">
+            <h2>Configure Files to Include</h2>
+            <div class="filters">
+                <div class="filter-item">
+                    <label for="max-size">Exclude files larger than (KB):</label>
+                    <input type="number" id="max-size" placeholder="e.g., 100">
+                </div>
+                <div class="filter-item">
+                    <label for="glob-patterns">gitignore-style glob patterns (one per line):</label>
+                    <textarea id="glob-patterns" rows="4" placeholder="e.g.,&#10;*.js&#10;!*.min.js&#10;docs/"></textarea>
+                </div>
+            </div>
+
+            <h3>Select Files and Directories</h3>
+            <div id="file-tree"></div>
+
+            <button id="generate-btn">Generate</button>
+        </div>
+
+        <div id="processing-indicator" class="hidden">
+            <div class="spinner"></div>
+            <p>Processing repository... This may take a few minutes for large repos.</p>
+        </div>
+
+        <div id="output-section" class="hidden">
+            <h2>Generated Output</h2>
+            <button id="copy-btn">Copy to Clipboard</button>
+            <textarea id="output-text" readonly></textarea>
+        </div>
+    </main>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="/static/script.js"></script>
+</body>
+</html>
