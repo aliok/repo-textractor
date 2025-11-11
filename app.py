@@ -23,6 +23,19 @@ app = Flask(__name__)
 
 # --- Helper Functions ---
 
+def is_binary(file_path):
+    """
+    Heuristic to check if a file is binary.
+    It reads a chunk of the file and checks for the presence of null bytes.
+    """
+    try:
+        with open(file_path, 'rb') as f:
+            chunk = f.read(1024)  # Read the first 1KB
+            return b'\0' in chunk
+    except IOError:
+        # If the file cannot be opened, treat it as problematic/binary.
+        return True
+
 def get_github_api_headers():
     """Returns headers for GitHub API requests, including authentication if a token is provided."""
     headers = {
@@ -224,6 +237,12 @@ def generate():
                 relative_path = os.path.relpath(file_path, extracted_root_folder)
 
                 # --- Apply Filters ---
+
+                # 0. Binary file check (NEW)
+                if is_binary(file_path):
+                    ignored_files_count += 1
+                    continue
+
                 # 1. Included paths filter (from checkbox tree)
                 if not any(relative_path.startswith(p) for p in included_paths):
                     ignored_files_count += 1
@@ -254,7 +273,7 @@ def generate():
                     with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
                         included_files_content[relative_path] = f.read()
                 except Exception:
-                    # Could be a binary file or other unreadable format
+                    # Fallback for any other reading errors
                     ignored_files_count += 1
                     continue
 

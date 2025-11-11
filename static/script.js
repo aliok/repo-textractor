@@ -88,32 +88,34 @@ $(document).ready(function() {
 
     function renderFileTree(files) {
         const tree = buildTreeObject(files);
-        const treeHtml = buildTreeHtml(tree);
+        const rootContentHtml = buildTreeHtml(tree);
+
+        const treeHtml = `
+            <ul class="tree-level">
+                <li>
+                    <span class="toggle expanded">▼</span>
+                    <input type="checkbox" id="cb-root" data-path="" checked>
+                    <label for="cb-root">/ (Repository Root)</label>
+                    ${rootContentHtml}
+                </li>
+            </ul>`;
+
         $('#file-tree').html(treeHtml);
     }
 
-    /**
-     * [CORRECTED] Builds a clean tree structure from a flat list of file paths.
-     * Each node represents a directory and contains a `_files` array and keys for subdirectories.
-     */
     function buildTreeObject(files) {
-        const root = { _files: [] }; // The root node represents the root directory
+        const root = { _files: [] };
         files.forEach(file => {
             const parts = file.path.split('/');
             let currentNode = root;
 
             parts.forEach((part, index) => {
                 if (index === parts.length - 1) {
-                    // This is the file part. Add it to the current directory's list of files.
                     currentNode._files.push({ name: part, path: file.path });
                 } else {
-                    // This is a directory part.
                     if (!currentNode[part]) {
-                        // If the directory doesn't exist yet, create it.
-                        // Every directory node must also have a `_files` property.
                         currentNode[part] = { _files: [] };
                     }
-                    // Move into the subdirectory for the next part of the path.
                     currentNode = currentNode[part];
                 }
             });
@@ -121,35 +123,32 @@ $(document).ready(function() {
         return root;
     }
 
-    /**
-     * [CORRECTED] Recursively builds the HTML for the file tree from the structured object.
-     */
     function buildTreeHtml(node, pathPrefix = '') {
         if (!node) return '';
 
         let html = '<ul class="tree-level">';
 
-        // 1. Process directories (all keys except '_files'), sorted alphabetically
         const directoryKeys = Object.keys(node).filter(k => k !== '_files').sort();
         directoryKeys.forEach(key => {
             const directoryNode = node[key];
             const currentPath = pathPrefix ? `${pathPrefix}/${key}` : key;
 
             html += `<li>`;
-            html += `<span class="toggle expanded">▼</span>`;
+            html += `<span class="toggle collapsed">▶</span>`;
             html += `<input type="checkbox" id="cb-${currentPath}" data-path="${currentPath}" checked>`;
             html += `<label for="cb-${currentPath}">${key}</label>`;
 
-            // Recursive call for the subdirectory's content
-            html += buildTreeHtml(directoryNode, currentPath);
+            const childHtml = buildTreeHtml(directoryNode, currentPath);
+            const styledChildHtml = childHtml.replace('<ul class="tree-level">', '<ul class="tree-level" style="display: none;">');
+            html += styledChildHtml;
+
             html += `</li>`;
         });
 
-        // 2. Process files (in the _files array), sorted alphabetically
         if (node._files) {
             node._files.sort((a, b) => a.name.localeCompare(b.name)).forEach(file => {
                 html += `<li>`;
-                html += `<span class="toggle-placeholder"></span>`; // Files don't have a toggle
+                html += `<span class="toggle-placeholder"></span>`;
                 html += `<input type="checkbox" id="cb-${file.path}" data-path="${file.path}" checked>`;
                 html += `<label for="cb-${file.path}">${file.name}</label>`;
                 html += `</li>`;
@@ -160,28 +159,56 @@ $(document).ready(function() {
         return html;
     }
 
-    // --- UI State Management ---
+    // --- UI State Management (NEW & IMPROVED) ---
 
     function handleCheckboxChange(e) {
         const checkbox = $(e.target);
         const isChecked = checkbox.prop('checked');
-        // Apply the same state to all children checkboxes within this `<li>`
-        const children = checkbox.closest('li').find('ul input[type="checkbox"]');
-        children.prop('checked', isChecked);
 
-        // Update parent checkboxes state
-        checkbox.parents('ul.tree-level > li').each(function() {
-            const parentLi = $(this);
-            const parentCheckbox = parentLi.children('input[type="checkbox"]');
-            // Check if any sibling or children of siblings are checked
-            const allDescendants = parentLi.parent().find('input[type="checkbox"]');
-            const someChecked = allDescendants.is(':checked');
-            // Check the parent if any of its descendants are checked
-            const parentOfParentCheckbox = parentLi.parent().closest('li').children('input[type="checkbox"]');
-            if(parentOfParentCheckbox.length > 0) {
-                parentOfParentCheckbox.prop('checked', someChecked);
-            }
-        });
+        // Part 1: Top-Down - Update all children recursively
+        const descendants = checkbox.closest('li').find('input[type="checkbox"]');
+        descendants.prop('checked', isChecked);
+        descendants.prop('indeterminate', false); // A direct action removes ambiguity
+
+        // Part 2: Bottom-Up - Update all parents recursively
+        updateAncestors(checkbox);
+    }
+
+    function updateAncestors(checkbox) {
+        const parentLi = checkbox.closest('ul').closest('li');
+        if (parentLi.length === 0) {
+            return; // Reached the root, stop.
+        }
+
+        const parentCheckbox = parentLi.find('> input[type="checkbox"]');
+        const childrenCheckboxes = parentLi.find('> ul > li > input[type="checkbox"]');
+
+        const totalChildren = childrenCheckboxes.length;
+        if (totalChildren === 0) {
+            updateAncestors(parentCheckbox); // Continue up the chain
+            return;
+        }
+
+        const checkedChildren = childrenCheckboxes.filter(':checked').length;
+        const indeterminateChildren = childrenCheckboxes.filter(function() {
+            return this.indeterminate;
+        }).length;
+
+        if (checkedChildren === 0 && indeterminateChildren === 0) {
+            // All children are unchecked
+            parentCheckbox.prop('checked', false);
+            parentCheckbox.prop('indeterminate', false);
+        } else if (checkedChildren === totalChildren) {
+            // All children are fully checked
+            parentCheckbox.prop('checked', true);
+            parentCheckbox.prop('indeterminate', false);
+        } else {
+            // A mix of states
+            parentCheckbox.prop('checked', false); // Not fully checked
+            parentCheckbox.prop('indeterminate', true);
+        }
+
+        updateAncestors(parentCheckbox); // Recurse
     }
 
     function handleTreeToggle(e) {
@@ -193,13 +220,21 @@ $(document).ready(function() {
 
     function getIncludedPaths() {
         const paths = [];
+        // Only add paths that are explicitly checked.
+        // The tri-state logic means indeterminate parents are not 'checked'.
         $('#file-tree input[type="checkbox"]:checked').each(function() {
             paths.push($(this).data('path'));
         });
 
-        // Optimization: if a directory is included, we don't need to list its children
+        // Optimization: if the root is checked, we just need its path ("")
+        if (paths.includes("")) {
+            return [""];
+        }
+
         const rootPaths = [];
         paths.sort();
+        // This logic correctly simplifies the list, e.g., if 'src' is included,
+        // it won't also include 'src/main.py'.
         paths.forEach(path => {
             if (!rootPaths.some(root => path.startsWith(root + '/'))) {
                 rootPaths.push(path);

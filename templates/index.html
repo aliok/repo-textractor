@@ -1,4 +1,3 @@
-<!-- templates/index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -34,8 +33,13 @@
                     <input type="number" id="max-size" placeholder="e.g., 100">
                 </div>
                 <div class="filter-item">
-                    <label for="glob-patterns">gitignore-style glob patterns (one per line):</label>
-                    <textarea id="glob-patterns" rows="4" placeholder="e.g.,&#10;*.js&#10;!*.min.js&#10;docs/"></textarea>
+                    <label for="glob-patterns">Filter by gitignore-style glob patterns:</label>
+                    <textarea id="glob-patterns" rows="4" placeholder="e.g.,&#10;To include only Python files: &#10;*.py&#10;To exclude all log files: &#10;!*.log&#10;To include src/ but exclude tests/: &#10;src/&#10;!src/tests/"></textarea>
+                </div>
+                <div class="filter-item info-filter">
+                    <input type="checkbox" id="binary-filter" checked disabled>
+                    <label for="binary-filter">Automatically exclude non-text/binary files</label>
+                    <small>(This is determined by checking file contents.)</small>
                 </div>
             </div>
 
